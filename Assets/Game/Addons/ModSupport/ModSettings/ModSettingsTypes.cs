@@ -150,6 +150,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         MultipleChoice,
         SliderInt,
         SliderFloat,
+        RangeInt,
         TupleInt,
         TupleFloat,
         Text,
@@ -228,6 +229,8 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
                     return new SliderIntKey();
                 case KeyType.SliderFloat:
                     return new SliderFloatKey();
+                case KeyType.RangeInt:
+                    return new RangeIntKey();
                 case KeyType.TupleInt:
                     return new TupleIntKey();
                 case KeyType.TupleFloat:
@@ -512,6 +515,72 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
             float value;
             if (float.TryParse(textValue, out value))
                 Value = Mathf.Clamp(value, Min, Max);
+        }
+    }
+
+    public class RangeIntKey : Key<Range<int>>
+    {
+        public Range<int> Limits = new Range<int>(0, 100);
+
+        public override KeyType KeyType
+        {
+            get { return KeyType.RangeInt; }
+        }
+
+        public override BaseScreenComponent OnWindow(ModSettingsWindow window, float x, float y, ref int height)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnRefreshWindow(BaseScreenComponent control)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnSaveWindow(BaseScreenComponent control)
+        {
+            throw new NotImplementedException();
+        }
+
+#if UNITY_EDITOR
+        public override int OnEditorWindow(Rect rect, HorizontalCallback horizontal, VerticalCallback vertical, Dictionary<string, object> cache)
+        {
+            if (Value == null)
+                Value = new Range<int>();
+
+            vertical(rect, 1,
+                (hr) =>
+                {
+                    horizontal(hr, "Value",
+                        (r) =>
+                        {
+                            float min = Value.Min;
+                            float max = Value.Max;
+                            EditorGUI.MinMaxSlider(r, ref min, ref max, Limits.Min, Limits.Max);
+                            Value.Min = Mathf.RoundToInt(min);
+                            Value.Max = Mathf.RoundToInt(max);
+                        },
+                        (r) => EditorGUI.LabelField(r, Value.ToString()));
+                },
+                (hr) => horizontal(hr, "Limits",
+                (r) => Limits.Min = EditorGUI.IntField(r, "Min", Limits.Min),
+                (r) => Limits.Max = EditorGUI.IntField(r, "Max", Limits.Max))
+                );
+
+            return 2;
+        }
+#endif
+
+        protected override string Serialize()
+        {
+            return Join(Value.Min, Value.Max);
+        }
+
+        protected override void TryDeserialize(string textValue)
+        {
+            int[] args;
+            if (TrySplit(textValue, 2, out args))
+                Value = new Range<int>(args[0], args[1]);
         }
     }
 
