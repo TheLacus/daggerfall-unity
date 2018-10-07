@@ -520,34 +520,38 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
 
     public class RangeIntKey : Key<Range<int>>
     {
-        public Range<int> Limits = new Range<int>(0, 100);
+        public Range<int> Limits = new Range<int>();
 
-        public override KeyType KeyType
+        public override KeyType KeyType { get { return KeyType.RangeInt; } }
+
+        public RangeIntKey()
         {
-            get { return KeyType.RangeInt; }
+            Value = new Range<int>();
         }
 
         public override BaseScreenComponent OnWindow(ModSettingsWindow window, float x, float y, ref int height)
         {
-            throw new NotImplementedException();
+            height += 12;
+            return new HorizontalRangeSlider(Limits, Value, 2, true)
+            {
+                Position = new Vector2(x, y + 6),
+                Size = new Vector2(80.0f, 4.0f),
+            };
         }
 
         public override void OnRefreshWindow(BaseScreenComponent control)
         {
-            throw new NotImplementedException();
+            ((HorizontalRangeSlider)control).Range = Value;
         }
 
         public override void OnSaveWindow(BaseScreenComponent control)
         {
-            throw new NotImplementedException();
+            Value = ((HorizontalRangeSlider)control).Range;
         }
 
 #if UNITY_EDITOR
         public override int OnEditorWindow(Rect rect, HorizontalCallback horizontal, VerticalCallback vertical, Dictionary<string, object> cache)
         {
-            if (Value == null)
-                Value = new Range<int>();
-
             vertical(rect, 1,
                 (hr) =>
                 {
