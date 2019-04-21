@@ -279,6 +279,53 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         }
 
         /// <summary>
+        /// Seeks a texture array with all textures for an archive or create one from individual textures.
+        /// </summary>
+        /// <param name="archive">Texture archive.</param>
+        /// <param name="recordCount">Number of records in this archive.</param>
+        /// <param name="textureMap">Texture type.</param>
+        /// <param name="textureArray">Imported texture array or null.</param>
+        /// <returns>True if texture array is found and imported.</returns>
+        public static bool TryImportTextureArray(int archive, int recordCount, TextureMap textureMap, Color32? fallbackColor, bool makeNoLongerReadable, out Texture2DArray textureArray)
+        {
+            Texture2D texture2D;
+            Texture2D[] textures = null;
+
+            if (DaggerfallUnity.Settings.AssetInjection)
+            {
+                if (TryImportTextureFromLooseFiles(archive, 0, 0, textureMap, true, out texture2D))
+                {
+                    textures = new Texture2D[recordCount];
+                }
+                else if (ModManager.Instance != null)
+                {
+                    Texture texture;
+                    if (ModManager.Instance.TryGetAsset(new[] { GetNameArchive(archive, textureMap), GetName(archive, 0, 0, textureMap) }, true, out texture))
+                    {
+                        if (textureArray = texture as Texture2DArray)
+                            return true;
+
+                        if (texture2D = texture as Texture2D)
+                            textures = new Texture2D[recordCount];
+                    }
+                }
+
+                if (textures != null)
+                {
+                    int record = 0;
+                    do textures[record] = texture2D;
+                    while (++record < textures.Length && TryImportTexture(archive, record, 0, textureMap, true, out texture2D));
+
+                    if (textureArray = TextureArrayBuilder.Make(textures, fallbackColor, makeNoLongerReadable, GetNameArchive(archive, textureMap)))
+                        return true;
+                }
+            }
+
+            textureArray = null;
+            return false;
+        }
+
+        /// <summary>
         /// Seek texture from loose files.
         /// </summary>
         /// <param name="archive">Texture archive.</param>
@@ -683,6 +730,19 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
                 return GetNameCifRci(filename, record, frame);
 
             return string.Format("{0}_{1}", GetNameCifRci(filename, record, frame), metalType);
+        }
+
+        /// <summary>
+        /// Gets the name for a texture archive.
+        /// </summary>
+        /// <param name="archive">Archive index.</param>
+        /// <param name="textureMap">Shader texture type.</param>
+        /// <returns>A formatted name for the given archive and texture type.</returns>
+        public static string GetNameArchive(int archive, TextureMap textureMap = TextureMap.Albedo)
+        {
+            return textureMap == TextureMap.Albedo ?
+                    string.Format("{0:000}", archive) :
+                    string.Format("{0:000}_{1}", archive, textureMap);
         }
 
         /// <summary>
