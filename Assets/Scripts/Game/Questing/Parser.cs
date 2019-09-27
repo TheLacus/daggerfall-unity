@@ -12,6 +12,7 @@
 using UnityEngine;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,6 +31,8 @@ namespace DaggerfallWorkshop.Game.Questing
         #region Fields
 
         const StringComparison comparison = StringComparison.InvariantCultureIgnoreCase;
+
+        readonly Dictionary<string, Macro> globalMacros = new Dictionary<string, Macro>();
 
         #endregion
 
@@ -117,6 +120,15 @@ namespace DaggerfallWorkshop.Game.Questing
                     // Always skip comment lines when in neither QBN or QRC
                     if (text.StartsWith("-", comparison))
                         continue;
+
+                    // Import macros from external resources
+                    if (text.StartsWith("import macro", comparison))
+                    {
+                        if (Macro.Import(line, globalMacros) == null)
+                            Debug.LogErrorFormat("Failed to parse import line: {0}", text);
+                        
+                        continue;
+                    }
                 }
             }
 
@@ -138,9 +150,12 @@ namespace DaggerfallWorkshop.Game.Questing
                 throw new Exception("Parse() error: Quest has no QBN section.");
             }
 
+            // Local macros are global macros plus macros defined inside QBN block
+            var localMacros = new Dictionary<string, Macro>(globalMacros);
+
             // Parse QRC and QBN
             ParseQRC(quest, qrcLines);
-            ParseQBN(quest, qbnLines);
+            ParseQBN(quest, qbnLines, localMacros);
 
             // End timer
             long totalTime = stopwatch.ElapsedMilliseconds - startTime;
@@ -264,7 +279,7 @@ namespace DaggerfallWorkshop.Game.Questing
             return false;
         }
 
-        void ParseQBN(Quest quest, List<string> lines)
+        void ParseQBN(Quest quest, List<string> lines, Dictionary<string, Macro> macros)
         {
             bool foundHeadlessTask = false;
             for (int i = 0; i < lines.Count; i++)
@@ -318,6 +333,10 @@ namespace DaggerfallWorkshop.Game.Questing
                     List<string> taskLines = ReadBlock(lines, ref i);
                     Task task = new Task(quest, taskLines.ToArray());
                     quest.AddTask(task);
+                }
+                else if (lines[i].StartsWith("macro", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    ParseMacro(quest, lines, ref i, macros);
                 }
                 else if (IsGlobalReference(lines[i]))
                 {
@@ -510,5 +529,43 @@ namespace DaggerfallWorkshop.Game.Questing
         }
 
         #endregion
+        
+
+        /// <summary>
+        /// Parses a macro definition or a macro insertion.
+        /// </summary>
+        /// <param name="quest"></param>
+        /// <param name="linesIn"></param>
+        /// <param name="currentLine"></param>
+        /// <param name="macros"></param>
+        private void ParseMacro(Quest quest, List<string> linesIn, ref int currentLine, Dictionary<string, Macro> macros)
+        {
+            if (!linesIn[currentLine].Contains(":"))
+            {
+                // Parse local macro
+                var macro = new Macro(linesIn, ref currentLine, macros);
+                macros.Add(macro.Name, macro);
+            }
+            else
+            {
+                // Insert macro at current position
+                List<string> content = Macro.ResolveMacro(linesIn[currentLine], macros);
+                if (content != null)
+                {
+                    for (int i = 0; i < content.Count; i++)
+                    {
+                        if (content[i].StartsWith("variable", StringComparison.InvariantCultureIgnoreCase))
+                            quest.AddTask(new Task(quest, new string[] { content[i] }));
+                        else if (content[i].Contains("task:") ||
+                            (content[i].StartsWith("until", StringComparison.InvariantCultureIgnoreCase) && content[i].Contains("performed:")))
+                            quest.AddTask(new Task(quest, ReadBlock(content, ref i).ToArray()));
+                    }
+                }
+                else
+                {
+                    Debug.LogErrorFormat("Failed to insert macro at line {0}.", currentLine);
+                }
+            }
+        }
     }
 }

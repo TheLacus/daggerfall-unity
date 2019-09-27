@@ -630,7 +630,8 @@ namespace DaggerfallWorkshop.Game.Questing
             }
             catch (Exception ex)
             {
-                LogFormat("Parsing quest {0} FAILED!\r\n{1}", questName, ex.Message);
+                Debug.LogException(ex);
+                //LogFormat("Parsing quest {0} FAILED!\r\n{1}", questName, ex.Message);
 
                 return null;
             }

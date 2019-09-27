@@ -82,6 +82,9 @@ namespace DaggerfallWorkshop.Game.Questing
             LoadQuestLists();
 
             QuestMachine.OnQuestStarted += QuestMachine_OnQuestStarted;
+
+            Quest quest = GetQuest("__DEMO22");
+            Debug.LogError(quest.QuestName);
         }
 
         public void QuestMachine_OnQuestStarted(Quest quest)

@@ -1,0 +1,32 @@
+---- Example quest testing "remove foe"
+
+Quest: __DEMO22
+
+
+QRC:
+
+
+Message: 1030
+Example message
+
+
+QBN:
+
+macro Foo
+
+    macro Bar
+        _$_ task:
+            say 1030
+    end macro
+
+    variable _$_
+
+    macro bar: Bar
+
+end macro
+
+macro foo: Foo
+
+_example_ task:
+    when _foo_ and _foo.bar_
+    say 1030
