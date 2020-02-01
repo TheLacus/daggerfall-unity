@@ -150,6 +150,11 @@ namespace DaggerfallWorkshop.Game.UserInterface
             get { return listItems[selectedIndex]; }
         }
 
+        public ListItem this[int index]
+        {
+            get {return listItems[index]; }
+        }
+
         public int Count
         {
             get { return listItems.Count; }
