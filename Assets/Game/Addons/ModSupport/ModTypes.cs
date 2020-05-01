@@ -12,6 +12,8 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using FullSerializer;
 
 namespace DaggerfallWorkshop.Game.Utility.ModSupport
 {
@@ -34,6 +36,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
     /// The content of a json mod manifest file, created from the Mod Builder and bundled with the mod itself.
     /// </summary>
     [Serializable]
+    [fsObject(Processor = typeof(IgnoreNullProcessor))]
     public class ModInfo
     {
         public string ModTitle;         //displayed in game
@@ -344,6 +347,32 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
                 return new ModReservedLayer();
 
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Do not serialize members whose values are null.
+    /// </summary>
+    public class IgnoreNullProcessor : fsObjectProcessor
+    {
+        public override void OnAfterSerialize(Type storageType, object instance, ref fsData data)
+        {
+            if (!data.IsDictionary)
+                throw new NotSupportedException("fsData is not a dictionary.");
+
+            RemoveNullMembers(data);
+        }
+
+        private void RemoveNullMembers(fsData data)
+        {
+            var dict = data.AsDictionary;
+            foreach (var item in dict.ToArray())
+            {
+                if (item.Value.IsNull)
+                    dict.Remove(item.Key);
+                else if (item.Value.IsDictionary)
+                    RemoveNullMembers(item.Value);
+            }
         }
     }
 }
