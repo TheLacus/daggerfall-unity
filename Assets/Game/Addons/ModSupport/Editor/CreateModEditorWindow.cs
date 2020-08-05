@@ -60,6 +60,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         GUIStyle fieldStyle = new GUIStyle();
         GUIContent documentationGUIContent;
         bool isSupportedEditorVersion;
+        bool modManagerReady;
 
         void OnEnable()
         {
@@ -69,6 +70,8 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
                 modOutPutPath = GetTempModDirPath();
             if (EditorPrefs.HasKey("lastModFile"))
                 currentFilePath = EditorPrefs.GetString("lastModFile");
+
+            modManagerReady = EditorPrefs.GetBool("modManagerReady", true);
 
             modInfo = ReadModInfoFile(currentFilePath);
             titleStyle.fontSize = 15;
@@ -84,6 +87,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         {
             EditorPrefs.SetString("modOutPutPath", modOutPutPath);
             EditorPrefs.SetString("lastModFile", currentFilePath);
+            EditorPrefs.SetBool("modManagerReady", modManagerReady);
         }
 
 
@@ -320,6 +324,8 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
 
             EditorGUILayout.TextArea("", GUI.skin.horizontalSlider);
 
+            EditorGUILayout.Space();
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.BeginVertical();
 
@@ -335,9 +341,19 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
 
             GUILayout.Label("Compression Type:\n", titleStyle);
             compressionOption = (ModCompressionOptions)EditorGUILayout.EnumPopup("", compressionOption, GUILayout.MaxWidth(125));
+            if (compressionOption == ModCompressionOptions.LZ4)
+                EditorGUILayout.HelpBox("LZ4 provides the best balance\nbetween size and performance.", MessageType.Info);
+            else if (compressionOption == ModCompressionOptions.LZMA)
+                EditorGUILayout.HelpBox("LZMA provides the highest compression but\nmay affects intial startup and memory usage.", MessageType.Info);
+            else if (compressionOption == ModCompressionOptions.Uncompressed)
+                EditorGUILayout.HelpBox("Use uncompressed if the mod already contains\ncompressed assets like crunch compressed textures.", MessageType.Info);
             EditorGUILayout.EndVertical();
 
-            if(GUILayout.Button("Collect Dependencies", GUILayout.MaxWidth(200)) && ModInfoReady)
+            EditorGUILayout.Space();
+
+            EditorGUILayout.BeginVertical();
+            GUILayout.Label("Utilities:\n", titleStyle);
+            if (GUILayout.Button("Collect Dependencies", GUILayout.MaxWidth(200)) && ModInfoReady)
             {
                 foreach(var assetPath in Assets.ToArray())
                 {
@@ -348,6 +364,13 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
                     }
                 }
             }
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginVertical();
+            GUILayout.Label("Post Process Build:\n", titleStyle);
+            // TODO: add support for custom post processors
+            modManagerReady = EditorGUILayout.Toggle(new GUIContent("Mod Manager Ready", "Create a package ready to be installed with Nexus Vortex Mod Manager."), modManagerReady);
+            EditorGUILayout.EndVertical();
 
             GUILayout.Space(100);
             EditorGUILayout.EndHorizontal();
@@ -356,6 +379,8 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
             EditorGUILayout.Space();
 
             EditorGUILayout.TextArea("", GUI.skin.horizontalSlider);
+
+            EditorGUILayout.Space();
 
             GUILayoutHelper.Horizontal(() =>
             {
@@ -574,7 +599,17 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
                     Directory.CreateDirectory(fullPath);
                 }
                 BuildPipeline.BuildAssetBundles(fullPath, buildMap, ToBuildAssetBundleOptions(compressionOption), buildTargets[i]);
+
+                if (modManagerReady)
+                {
+                    string modFileName = Path.GetFileNameWithoutExtension(buildMap[0].assetBundleName);
+                    string assetBundleName = buildMap[0].assetBundleName.ToLower();
+                    string modManagerPath = Path.Combine(modOutPutPath, "ModManagerReady", buildTargets[i].ToString(), $"{modFileName}_{modInfo.ModVersion}", "Mods");
+                    Directory.CreateDirectory(modManagerPath);
+                    File.Copy(Path.Combine(fullPath, assetBundleName), Path.Combine(modManagerPath, assetBundleName));
+                }
             }
+
             return true;
         }
 
