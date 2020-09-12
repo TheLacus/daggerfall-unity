@@ -13,7 +13,6 @@ using System;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using DaggerfallWorkshop.Utility;
 
 namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
 {
@@ -115,6 +114,8 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <seealso cref="GetTuple{T}(string, string)"/>
+        [Obsolete("Use GetTuple{int}().")]
         public DaggerfallWorkshop.Utility.Tuple<int, int> GetTupleInt(string section, string name)
         {
             return GetValue<DaggerfallWorkshop.Utility.Tuple<int, int>>(section, name);
@@ -125,9 +126,24 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <seealso cref="GetTuple{T}(string, string)"/>
+        [Obsolete("Use GetTuple{float}().")]
         public DaggerfallWorkshop.Utility.Tuple<float, float> GetTupleFloat(string section, string name)
         {
             return GetValue<DaggerfallWorkshop.Utility.Tuple<float, float>>(section, name);
+        }
+
+        /// <summary>
+        /// Gets a Tuple of values from user settings or, as fallback, from default settings with type <c>ValueTuple{T, T}</c>.
+        /// Tuple syntax is available only for precompiled mods; for example <c>(int Min, int Max) range = GetTuple{int}("Section", "Key");</c>
+        /// </summary>
+        /// <typeparam name="T">Type of value. Must be <see cref="int"/> or <see cref="float"/>.</typeparam>
+        /// <param name="section">Name of section.</param>
+        /// <param name="name">Name of key.</param>
+        public (T, T) GetTuple<T>(string section, string name)
+            where T : struct
+        {
+            return GetValue<(T, T)>(section, name);
         }
 
         /// <summary>

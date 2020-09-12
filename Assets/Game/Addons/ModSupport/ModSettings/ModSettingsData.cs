@@ -320,6 +320,12 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
             if (TryGetKey(sectionName, keyName, out key))
                 return key.Value;
 
+            if (typeof(T) == typeof(DaggerfallWorkshop.Utility.Tuple<int, int>))
+                return (T)(object)new DaggerfallWorkshop.Utility.Tuple<int, int>(GetValue<(int, int)>(sectionName, keyName));
+
+            if (typeof(T) == typeof(DaggerfallWorkshop.Utility.Tuple<float, float>))
+                return (T)(object)new DaggerfallWorkshop.Utility.Tuple<float, float>(GetValue<(float, float)>(sectionName, keyName));
+
             throw new KeyNotFoundException(string.Format("The key <{0}>({1},{2}) was not present in {3} settings.", typeof(T), sectionName, keyName, mod.Title));
         }
 

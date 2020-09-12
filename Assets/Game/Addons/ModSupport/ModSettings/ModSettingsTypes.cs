@@ -552,102 +552,102 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
     /// <summary>
     /// Holds two int values.
     /// </summary>
-    public class TupleIntKey : Key<DaggerfallWorkshop.Utility.Tuple<int, int>>
+    [fsObject("v2", Processor = typeof(ModSettingsTupleProcessor))]
+    public class TupleIntKey : Key<(int, int)>
     {
         public override KeyType KeyType { get { return KeyType.TupleInt; } }
 
         public override BaseScreenComponent OnWindow(ModSettingsWindow window, float x, float y, ref int height)
         {
-            return MultiTextBox.Make(new Rect(x + 95, y, 40, 6), mt => mt.DoLayout(Value.First, Value.Second));
+            return MultiTextBox.Make(new Rect(x + 95, y, 40, 6), mt => mt.DoLayout(Value.Item1, Value.Item2));
         }
 
         public override void OnRefreshWindow(BaseScreenComponent control)
         {
-            ((MultiTextBox)control).DoLayout(Value.First, Value.Second);
+            ((MultiTextBox)control).DoLayout(Value.Item1, Value.Item2);
         }
 
         public override void OnSaveWindow(BaseScreenComponent control)
         {
-            Value = ((MultiTextBox)control).GetIntTuple();
+            Value = ((MultiTextBox)control).GetIntTuple().ToValueTuple();
         }
 
 #if UNITY_EDITOR
         public override int OnEditorWindow(Rect rect, HorizontalCallback horizontal, VerticalCallback vertical, Dictionary<string, object> cache)
         {
-            if (Value == null) Value = DaggerfallWorkshop.Utility.Tuple<int, int>.Make(0, 100);
             horizontal(rect, "Value",
-                (r) => Value.First = EditorGUI.IntField(r, "First", Value.First),
-                (r) => Value.Second = EditorGUI.IntField(r, "Second", Value.Second));
+                (r) => Value = (EditorGUI.IntField(r, "First", Value.Item1), Value.Item2),
+                (r) => Value = (Value.Item1, EditorGUI.IntField(r, "Second", Value.Item2)));
             return 1;
         }
 #endif
 
-        protected override bool IsValueEqual(DaggerfallWorkshop.Utility.Tuple<int, int> value)
+        protected override bool IsValueEqual((int, int) value)
         {
-            return Value.First == value.First && Value.Second == value.Second;
+            return Value == value;
         }
 
         protected override string Serialize()
         {
-            return Join(Value.First, Value.Second);
+            return Join(Value.Item1, Value.Item2);
         }
 
         protected override void Deserialize(string textValue)
         {
             int[] args;
             if (TrySplit(textValue, 2, out args))
-                Value = new DaggerfallWorkshop.Utility.Tuple<int, int>(args[0], args[1]);
+                Value = (args[0], args[1]);
         }
     }
 
     /// <summary>
     /// Holds two float values.
     /// </summary>
-    public class TupleFloatKey : Key<DaggerfallWorkshop.Utility.Tuple<float, float>>
+    [fsObject("v2", Processor = typeof(ModSettingsTupleProcessor))]
+    public class TupleFloatKey : Key<(float, float)>
     {
         public override KeyType KeyType { get { return KeyType.TupleFloat; } }
 
         public override BaseScreenComponent OnWindow(ModSettingsWindow window, float x, float y, ref int height)
         {
-            return MultiTextBox.Make(new Rect(x + 95, y, 40, 6), mt => mt.DoLayout(Value.First, Value.Second));
+            return MultiTextBox.Make(new Rect(x + 95, y, 40, 6), mt => mt.DoLayout(Value.Item1, Value.Item2));
         }
 
         public override void OnRefreshWindow(BaseScreenComponent control)
         {
-            ((MultiTextBox)control).DoLayout(Value.First, Value.Second);
+            ((MultiTextBox)control).DoLayout(Value.Item1, Value.Item2);
         }
 
         public override void OnSaveWindow(BaseScreenComponent control)
         {
-            Value = ((MultiTextBox)control).GetFloatTuple();
+            Value = ((MultiTextBox)control).GetFloatTuple().ToValueTuple();
         }
 
 #if UNITY_EDITOR
         public override int OnEditorWindow(Rect rect, HorizontalCallback horizontal, VerticalCallback vertical, Dictionary<string, object> cache)
         {
-            if (Value == null) Value = DaggerfallWorkshop.Utility.Tuple<float, float>.Make(0, 100);
             horizontal(rect, "Value",
-                (r) => Value.First = EditorGUI.FloatField(r, "First", Value.First),
-                (r) => Value.Second = EditorGUI.FloatField(r, "Second", Value.Second));
+                (r) => Value = (EditorGUI.FloatField(r, "First", Value.Item1), Value.Item2),
+                (r) => Value = (Value.Item1, EditorGUI.FloatField(r, "Second", Value.Item2)));
             return 1;
         }
 #endif
 
-        protected override bool IsValueEqual(DaggerfallWorkshop.Utility.Tuple<float, float> value)
+        protected override bool IsValueEqual((float, float) value)
         {
-            return Value.First == value.First && Value.Second == value.Second;
+            return Value == value;
         }
 
         protected override string Serialize()
         {
-            return Join(Value.First, Value.Second);
+            return Join(Value.Item1, Value.Item2);
         }
 
         protected override void Deserialize(string textValue)
         {
             float[] args;
             if (TrySplit(textValue, 2, out args))
-                Value = new DaggerfallWorkshop.Utility.Tuple<float, float>(args[0], args[1]);
+                Value = (args[0], args[1]);
         }
     }
 
@@ -738,6 +738,32 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
             Color color;
             if (ColorUtility.TryParseHtmlString("#" + textValue, out color))
                 Value = color;
+        }
+    }
+
+    internal class ModSettingsTupleProcessor : fsObjectProcessor
+    {
+        public override void OnBeforeDeserialize(Type storageType, ref fsData data)
+        {
+            Dictionary<string, fsData> keyData = data.AsDictionary;
+            if (!keyData.TryGetValue("$version", out fsData version))
+                return;
+
+            if (version.AsString.Equals("v1", StringComparison.Ordinal) && keyData.TryGetValue("Value", out fsData value))
+            {
+                Dictionary<string, fsData> valueData = value.AsDictionary;
+                UpgradeTuple(valueData, "First", "Item1");
+                UpgradeTuple(valueData, "Second", "Item2");
+            }
+        }
+
+        private static void UpgradeTuple(Dictionary<string, fsData> keyData, string src, string dst)
+        {
+            if (keyData.TryGetValue(src, out fsData value))
+            {
+                keyData.Remove(src);
+                keyData[dst] = value;
+            }
         }
     }
 
