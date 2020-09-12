@@ -146,13 +146,44 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
     /// </summary>
     public enum KeyType
     {
+        /// <summary>
+        /// A set/unset toggle of type <see cref="bool"/>.
+        /// </summary>
         Toggle,
+
+        /// <summary>
+        /// A list of ordered choices where the value is the <see cref="int"/> index.
+        /// </summary>
         MultipleChoice,
+
+        /// <summary>
+        /// A single <see cref="int"/> value.
+        /// </summary>
         SliderInt,
+
+        /// <summary>
+        /// A single <see cref="float"/> value.
+        /// </summary>
         SliderFloat,
+
+        /// <summary>
+        /// A tuple of type <see cref="Tuple{T1, T2}"/> where both values are <see cref="int"/>.
+        /// </summary>
         TupleInt,
+
+        /// <summary>
+        /// A tuple of type <see cref="Tuple{T1, T2}"/> where both values are <see cref="float"/>.
+        /// </summary>
         TupleFloat,
+
+        /// <summary>
+        /// A raw <see cref="string"/> text content.
+        /// </summary>
         Text,
+
+        /// <summary>
+        /// A color with type <see cref="Color32"/>.
+        /// </summary>
         Color
     }
 

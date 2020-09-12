@@ -10,6 +10,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -65,6 +66,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public string GetString(string section, string name)
         {
             return GetValue<string>(section, name);
@@ -75,6 +77,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public int GetInt(string section, string name)
         {
             return GetValue<int>(section, name);
@@ -85,6 +88,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public float GetFloat(string section, string name)
         {
             return GetValue<float>(section, name);
@@ -95,6 +99,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public bool GetBool(string section, string name)
         {
             return GetValue<bool>(section, name);
@@ -105,6 +110,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public Color32 GetColor(string section, string name)
         {
             return GetValue<Color32>(section, name);
@@ -115,6 +121,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public DaggerfallWorkshop.Utility.Tuple<int, int> GetTupleInt(string section, string name)
         {
             return GetValue<DaggerfallWorkshop.Utility.Tuple<int, int>>(section, name);
@@ -125,6 +132,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         /// </summary>
         /// <param name="section">Name of section.</param>
         /// <param name="name">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public DaggerfallWorkshop.Utility.Tuple<float, float> GetTupleFloat(string section, string name)
         {
             return GetValue<DaggerfallWorkshop.Utility.Tuple<float, float>>(section, name);
@@ -132,10 +140,13 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
 
         /// <summary>
         /// Get a value from user settings or, as fallback, from default settings.
+        /// The type parameter must be one of the underlining types defined by <see cref="KeyType"/> enum (not the enum itself).
+        /// For example <c>var multipleChoiceIndex = settings.GetValue{int}("Section", "Key");</c>
         /// </summary>
         /// <typeparam name="T">Type of value.</typeparam>
         /// <param name="sectionName">Name of section.</param>
         /// <param name="keyName">Name of key.</param>
+        /// <exception cref="KeyNotFoundException"/>
         public T GetValue<T>(string sectionName, string keyName)
         {
             return data.GetValue<T>(sectionName, keyName);
