@@ -549,11 +549,30 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
         }
     }
 
+    [fsObject("v2", Processor = typeof(ModSettingsTupleProcessor))]
+    public abstract class TupleKey<T> : Key<(T, T)>
+    {
+        protected sealed override bool IsValueEqual((T, T) value)
+        {
+            return Value.Equals(value);
+        }
+
+        protected sealed override string Serialize()
+        {
+            return Join(Value.Item1, Value.Item2);
+        }
+
+        protected sealed override void Deserialize(string textValue)
+        {
+            if (TrySplit(textValue, 2, out T[] args))
+                Value = (args[0], args[1]);
+        }
+    }
+
     /// <summary>
     /// Holds two int values.
     /// </summary>
-    [fsObject("v2", Processor = typeof(ModSettingsTupleProcessor))]
-    public class TupleIntKey : Key<(int, int)>
+    public class TupleIntKey : TupleKey<int>
     {
         public override KeyType KeyType { get { return KeyType.TupleInt; } }
 
@@ -581,30 +600,12 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
             return 1;
         }
 #endif
-
-        protected override bool IsValueEqual((int, int) value)
-        {
-            return Value == value;
-        }
-
-        protected override string Serialize()
-        {
-            return Join(Value.Item1, Value.Item2);
-        }
-
-        protected override void Deserialize(string textValue)
-        {
-            int[] args;
-            if (TrySplit(textValue, 2, out args))
-                Value = (args[0], args[1]);
-        }
     }
 
     /// <summary>
     /// Holds two float values.
     /// </summary>
-    [fsObject("v2", Processor = typeof(ModSettingsTupleProcessor))]
-    public class TupleFloatKey : Key<(float, float)>
+    public class TupleFloatKey : TupleKey<float>
     {
         public override KeyType KeyType { get { return KeyType.TupleFloat; } }
 
@@ -632,23 +633,6 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings
             return 1;
         }
 #endif
-
-        protected override bool IsValueEqual((float, float) value)
-        {
-            return Value == value;
-        }
-
-        protected override string Serialize()
-        {
-            return Join(Value.Item1, Value.Item2);
-        }
-
-        protected override void Deserialize(string textValue)
-        {
-            float[] args;
-            if (TrySplit(textValue, 2, out args))
-                Value = (args[0], args[1]);
-        }
     }
 
     /// <summary>
