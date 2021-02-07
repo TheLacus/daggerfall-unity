@@ -9,6 +9,9 @@
 // Notes:           This is to be considered EXPERIMENTAL and can be changed or removed at any time.
 //
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Utility.AssetInjection
@@ -41,6 +44,19 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         }
 
         /// <summary>
+        /// Creates static door data for this custom door.
+        /// </summary>
+        /// <param name="staticDoors">The list of static doors for the vanilla building.</param>
+        /// <param name="buildingKey">The key of the building that owns the doors.</param>
+        /// <returns>StaticDoor data to be used by this custom door.</returns>
+        protected virtual StaticDoor ProcessStaticDoor(IReadOnlyList<StaticDoor> staticDoors, int buildingKey)
+        {
+            StaticDoor staticDoor = staticDoors[0];
+            staticDoor.buildingKey = buildingKey;
+            return staticDoor;
+        }
+
+        /// <summary>
         /// Set static door data to all doors in the given building gameobject.
         /// </summary>
         /// <param name="building">The imported gameobject which provides building and doors.</param>
@@ -48,14 +64,13 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         /// <param name="buildingKey">The key of the building that owns the doors.</param>
         public static void InitDoors(GameObject building, StaticDoor[] staticDoors, int buildingKey)
         {
-            // Make data for the static door; only the common data for the building is needed.
-            StaticDoor staticDoor = staticDoors[0];
-            staticDoor.buildingKey = buildingKey;
-
-            // Set data to all doors in the building
             var doors = building.GetComponentsInChildren<CustomDoor>();
+            if (doors.Length == 0)
+                return;
+
+            ReadOnlyCollection<StaticDoor> staticDoorsWrapper = Array.AsReadOnly(staticDoors);
             for (int i = 0; i < doors.Length; i++)
-                doors[i].staticDoor = staticDoor;
+                doors[i].staticDoor = doors[i].ProcessStaticDoor(staticDoorsWrapper, buildingKey);
         }
 
         /// <summary>
