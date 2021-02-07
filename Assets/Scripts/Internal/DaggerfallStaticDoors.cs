@@ -14,10 +14,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using DaggerfallConnect;
 using DaggerfallConnect.Utility;
 using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Utility;
+using DaggerfallWorkshop.Utility.AssetInjection;
 
 namespace DaggerfallWorkshop
 {
@@ -28,6 +30,8 @@ namespace DaggerfallWorkshop
     [Serializable]
     public class DaggerfallStaticDoors : MonoBehaviour
     {
+        HashSet<(int building, int door)> overriddenDoors;
+
         public StaticDoor[] Doors;                  // Array of doors attached this building or group of buildings
 
         void Start()
@@ -112,15 +116,20 @@ namespace DaggerfallWorkshop
             bool found = false;
             for (int i = 0; i < Doors.Length; i++)
             {
-                Quaternion buildingRotation = GameObjectHelper.QuaternionFromMatrix(Doors[i].buildingMatrix);
-                Vector3 doorNormal = buildingRotation * Doors[i].normal;
+                StaticDoor door = Doors[i];
+
+                if (overriddenDoors != null && overriddenDoors.Contains((door.buildingKey, door.doorIndex)))
+                    continue;
+
+                Quaternion buildingRotation = GameObjectHelper.QuaternionFromMatrix(door.buildingMatrix);
+                Vector3 doorNormal = buildingRotation * door.normal;
                 Quaternion facingRotation = Quaternion.LookRotation(doorNormal, Vector3.up);
 
                 // Setup single trigger position and size over each door in turn
                 // This method plays nice with transforms
-                c.size = Doors[i].size;
+                c.size = door.size;
                 go.transform.parent = transform;
-                go.transform.position = transform.rotation * Doors[i].buildingMatrix.MultiplyPoint3x4(Doors[i].centre);
+                go.transform.position = transform.rotation * Doors[i].buildingMatrix.MultiplyPoint3x4(door.centre);
                 go.transform.position += transform.position;
                 go.transform.rotation = facingRotation;
 
@@ -128,7 +137,7 @@ namespace DaggerfallWorkshop
                 if (c.bounds.Contains(point))
                 {
                     found = true;
-                    doorOut = Doors[i];
+                    doorOut = door;
                     if (doorOut.doorType == DoorTypes.DungeonExit)
                         break;
                 }
@@ -229,6 +238,24 @@ namespace DaggerfallWorkshop
             }
 
             return true;
+        }
+
+        // TODO: use position of custom doors for interior to exterior transition.
+        internal void SetCustomDoors(IList<CustomDoor> customDoors = null)
+        {
+            if (customDoors != null)
+            {
+                IEnumerable<(int, int)> doorKeys = from customDoor in customDoors
+                                                   let key = customDoor.MakeOverrideKey()
+                                                   where key.HasValue
+                                                   select key.Value;
+
+                overriddenDoors = new HashSet<(int, int)>(doorKeys);
+            }
+            else
+            {
+                overriddenDoors = null;
+            }
         }
 
         /// <summary>

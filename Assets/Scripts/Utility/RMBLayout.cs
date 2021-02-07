@@ -149,11 +149,12 @@ namespace DaggerfallWorkshop.Utility
             List<StaticDoor> modelDoors;
             List<StaticDoor> propDoors;
             List<StaticBuilding> modelBuildings;
+            List<CustomDoor> customDoors;
 
             // Add models and static props
             GameObject modelsNode = new GameObject("Models");
             modelsNode.transform.parent = go.transform;
-            AddModels(dfUnity, layoutX, layoutY, ref blockData, out modelDoors, out modelBuildings, combiner, modelsNode.transform);
+            AddModels(dfUnity, layoutX, layoutY, ref blockData, out modelDoors, out modelBuildings, out customDoors, combiner, modelsNode.transform);
             AddProps(dfUnity, ref blockData, out propDoors, combiner, modelsNode.transform);
 
             // Combine list of doors found in models and props
@@ -179,7 +180,7 @@ namespace DaggerfallWorkshop.Utility
 
             // Add static doors component
             if (allDoors.Count > 0)
-                AddStaticDoors(allDoors.ToArray(), go);
+                AddStaticDoors(allDoors.ToArray(), go, customDoors);
 
             // Add static buildings component
             if (modelBuildings.Count > 0)
@@ -710,11 +711,13 @@ namespace DaggerfallWorkshop.Utility
             ref DFBlock blockData,
             out List<StaticDoor> doorsOut,
             out List<StaticBuilding> buildingsOut,
+            out List<CustomDoor> customDoorsOut,
             ModelCombiner combiner = null,
             Transform parent = null)
         {
             doorsOut = new List<StaticDoor>();
             buildingsOut = new List<StaticBuilding>();
+            customDoorsOut = null;
 
             // Iterate through all subrecords
             int recordCount = 0;
@@ -771,7 +774,12 @@ namespace DaggerfallWorkshop.Utility
                     {
                         // Find doors
                         if (staticDoors != null && staticDoors.Length > 0)
-                            CustomDoor.InitDoors(go, staticDoors, buildingKey);
+                        {
+                            if (customDoorsOut == null)
+                                customDoorsOut = new List<CustomDoor>();
+
+                            customDoorsOut.AddRange(CustomDoor.InitDoors(go, staticDoors, buildingKey));
+                        }
 
                         continue;
                     }
@@ -875,13 +883,16 @@ namespace DaggerfallWorkshop.Utility
             GameObjectHelper.InstantiatePrefab(dfUnity.Option_CityLightPrefab.gameObject, string.Empty, parent, position);
         }
 
-        private static void AddStaticDoors(StaticDoor[] doors, GameObject target)
+        private static void AddStaticDoors(StaticDoor[] doors, GameObject target, IList<CustomDoor> customDoors = null)
         {
             DaggerfallStaticDoors c = target.GetComponent<DaggerfallStaticDoors>();
             if (c == null)
                 c = target.AddComponent<DaggerfallStaticDoors>();
             if (doors != null && target != null)
+            {
                 c.Doors = doors;
+                c.SetCustomDoors(customDoors);
+            }
         }
 
         private static void AddStaticBuildings(StaticBuilding[] buildings, GameObject target)

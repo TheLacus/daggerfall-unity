@@ -6,7 +6,7 @@
 // Original Author: TheLacus
 // Contributors:    
 // 
-// Notes:           This is to be considered EXPERIMENTAL and can be changed or removed at any time.
+// Notes:
 //
 
 using UnityEngine;
@@ -16,10 +16,6 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
     /// <summary>
     /// Defines a custom door for a building imported by Asset-Injection framework.
     /// </summary>
-    /// <remarks>
-    /// TODO:
-    /// - Interior to exterior transition should be based on position of new doors.
-    /// </remarks>
     [ExecuteInEditMode]
     [RequireComponent(typeof(BoxCollider))]
     public class CustomDoor : MonoBehaviour
@@ -32,6 +28,12 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         [Tooltip("The trigger for this door.")]
         public BoxCollider DoorTrigger;
 
+        /// <summary>
+        /// If different than <c>-1</c>, this is the index of the door that is overridden.
+        /// </summary>
+        [Tooltip("Use -1 to add a new door or door index to override classic door.")]
+        public int DoorIndex = -1;
+
         private void Awake()
         {
             if (!DoorTrigger)
@@ -40,13 +42,21 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             DoorTrigger.isTrigger = true;
         }
 
+        internal (int, int)? MakeOverrideKey()
+        {
+            if (staticDoor.HasValue && DoorIndex != -1)
+                return (staticDoor.Value.buildingKey, DoorIndex);
+
+            return null;
+        }
+
         /// <summary>
         /// Set static door data to all doors in the given building gameobject.
         /// </summary>
         /// <param name="building">The imported gameobject which provides building and doors.</param>
         /// <param name="staticDoors">The list of static doors for the vanilla building.</param>
         /// <param name="buildingKey">The key of the building that owns the doors.</param>
-        public static void InitDoors(GameObject building, StaticDoor[] staticDoors, int buildingKey)
+        public static CustomDoor[] InitDoors(GameObject building, StaticDoor[] staticDoors, int buildingKey)
         {
             // Make data for the static door; only the common data for the building is needed.
             StaticDoor staticDoor = staticDoors[0];
@@ -56,6 +66,8 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             var doors = building.GetComponentsInChildren<CustomDoor>();
             for (int i = 0; i < doors.Length; i++)
                 doors[i].staticDoor = staticDoor;
+
+            return doors;
         }
 
         /// <summary>
